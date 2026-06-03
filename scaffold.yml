@@ -1,0 +1,145 @@
+name: camaleaun/wp-scaffold-plugin
+description: Opinionated WordPress plugin scaffold with PSR-4, PHPUnit, PHPStan and PHPCS.
+version: 1
+engine: ">=1.0.0"
+
+# ── Parameters ────────────────────────────────────────────────────────────────
+# Exposed as CLI flags: --plugin_name="My Plugin" etc.
+# `default: ~` means derived from slug at runtime (see `derive`).
+
+parameters:
+  plugin_name:
+    description: "What to put in the 'Plugin Name:' header"
+    default: ~
+    derive: "ucwords(slug, '-')"
+  plugin_description:
+    description: "What to put in the 'Description:' header"
+    default: "PLUGIN DESCRIPTION HERE"
+  plugin_author:
+    description: "What to put in the 'Author:' header"
+    default: "YOUR NAME HERE"
+  plugin_author_uri:
+    description: "What to put in the 'Author URI:' header"
+    default: "YOUR SITE HERE"
+  plugin_uri:
+    description: "What to put in the 'Plugin URI:' header"
+    default: "PLUGIN SITE HERE"
+  skip-tests:
+    description: "Don't generate files for unit testing"
+    type: flag
+    default: false
+  ci:
+    description: "CI provider"
+    default: github
+    options: [github, gitlab, circle, bitbucket]
+  activate:
+    description: "Activate the newly generated plugin"
+    type: flag
+    default: false
+  activate-network:
+    description: "Network activate the newly generated plugin"
+    type: flag
+    default: false
+  force:
+    description: "Overwrite files that already exist"
+    type: flag
+    default: false
+  dir:
+    description: "Put the new plugin in an arbitrary directory path"
+    default: ~
+
+# ── Computed ──────────────────────────────────────────────────────────────────
+# Derived automatically — not exposed as CLI flags.
+# Expressions use only: str_replace, strtoupper, strtolower, ucwords, implode,
+# explode, strpos and string concatenation (~).
+# `slug` is always available as the positional <slug> argument.
+
+computed:
+  plugin_package:        "str_replace(' ', '_', plugin_name)"
+  plugin_namespace:      "str_replace(' ', '\\\\', plugin_name)"
+  plugin_namespace_test: "plugin_namespace ~ '\\\\Tests'"
+  plugin_const_prefix:   "strtoupper(str_replace('-', '_', slug))"
+  textdomain:            slug
+  plugin_tested_up_to:   wp_version
+
+# ── Variables ─────────────────────────────────────────────────────────────────
+# Explicit mapping: template placeholder → parameter or computed name.
+# Only needed when the placeholder name differs from the source name.
+# Placeholders not listed here resolve by matching their own name directly.
+
+variables:
+  plugin_name:           plugin_name
+  plugin_description:    plugin_description
+  plugin_author:         plugin_author
+  plugin_author_uri:     plugin_author_uri
+  plugin_uri:            plugin_uri
+  plugin_package:        plugin_package
+  plugin_namespace:      plugin_namespace
+  plugin_namespace_test: plugin_namespace_test
+  plugin_const_prefix:   plugin_const_prefix
+  plugin_tested_up_to:   plugin_tested_up_to
+  textdomain:            textdomain
+  slug:                  slug
+
+# ── Files ─────────────────────────────────────────────────────────────────────
+
+files:
+  core:
+    items:
+      - dest: "{{slug}}.php"
+        template: plugin.mustache
+      - dest: src/Autoloader.php
+        template: plugin-autoloader.mustache
+      - dest: src/Packages.php
+        template: plugin-packages.mustache
+      - dest: src/Constants.php
+        template: plugin-constants.mustache
+      - dest: readme.txt
+        template: plugin-readme.mustache
+      - dest: composer.json
+        template: plugin-composer.mustache
+      - dest: .gitignore
+        template: plugin-gitignore.mustache
+      - dest: .distignore
+        template: plugin-distignore.mustache
+      - dest: .editorconfig
+        template: plugin-editorconfig.mustache
+
+  tests:
+    skip_when: { flag: skip-tests }
+    items:
+      - dest: phpunit.xml
+        template: plugin-phpunit.mustache
+      - dest: phpstan.neon
+        template: plugin-phpstan.mustache
+      - dest: .phpcs.xml.dist
+        template: plugin-phpcs.mustache
+      - dest: tests/bootstrap.php
+        template: plugin-bootstrap.mustache
+      - dest: tests/stubs/functions.php
+        template: plugin-stubs.mustache
+
+  ci:
+    select_by: { param: ci }
+    items:
+      - dest: .github/workflows/tests.yml
+        template: plugin-ci-github.mustache
+        when: github
+      - dest: .gitlab-ci.yml
+        template: plugin-ci-gitlab.mustache
+        when: gitlab
+      - dest: .circleci/config.yml
+        template: plugin-ci-circle.mustache
+        when: circle
+      - dest: bitbucket-pipelines.yml
+        template: plugin-ci-bitbucket.mustache
+        when: bitbucket
+
+# ── Post-actions ──────────────────────────────────────────────────────────────
+# Steps executed after file generation.
+
+post_actions:
+  - action: plugin_activate
+    when: { flag: activate }
+  - action: plugin_activate_network
+    when: { flag: activate-network }
