@@ -49,18 +49,9 @@ parameters:
     default: ~
 
 # ── Computed ──────────────────────────────────────────────────────────────────
-# Derived automatically — not exposed as CLI flags.
-# Expressions use only: str_replace, strtoupper, strtolower, ucwords, implode,
-# explode, strpos and string concatenation (~).
-# `slug` is always available as the positional <slug> argument.
-
-computed:
-  plugin_package:        "str_replace(' ', '_', plugin_name)"
-  plugin_namespace:      "str_replace(' ', '\\\\', plugin_name)"
-  plugin_namespace_test: "plugin_namespace ~ '\\\\Tests'"
-  plugin_const_prefix:   "strtoupper(str_replace('-', '_', slug))"
-  textdomain:            slug
-  plugin_tested_up_to:   wp_version
+# Computed variables are defined in computed.php (PHP closure).
+# computed.php receives $vars and returns the updated array.
+# See computed.php for the full list of derived variables.
 
 # ── Variables ─────────────────────────────────────────────────────────────────
 # Explicit mapping: template placeholder → parameter or computed name.
